@@ -4,24 +4,13 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Personal SOC Dashboard</title>
-    <style>
-        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; background-color: #121212; color: #e0e0e0; margin: 0; padding: 20px; }
-        h1, h2 { color: #76a9fa; border-bottom: 1px solid #333; padding-bottom: 10px; font-weight: 300; }
-        .dashboard-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(400px, 1fr)); gap: 20px; }
-        .widget { background-color: #1e1e1e; padding: 20px; border-radius: 8px; border: 1px solid #333; }
-        #alerts-table-container { max-height: 500px; overflow-y: auto; }
-        .alerts-table { width: 100%; border-collapse: collapse; }
-        .alerts-table th, .alerts-table td { padding: 12px; text-align: left; border-bottom: 1px solid #333; }
-        .alerts-table th { background-color: #252525; position: sticky; top: 0; }
-        .severity-High { color: #ff5555; font-weight: bold; }
-        .severity-Medium { color: #ffb86c; }
-        .severity-Low { color: #8be9fd; }
-    </style>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
 </head>
 <body>
     <h1>Personal Security Operations Center</h1>
     <div class="dashboard-grid">
-        <div class="widget">
+        
+        <div class="widget" style="grid-column: 1 / -1;">
             <h2>Live Alerts Feed</h2>
             <div id="alerts-table-container">
                 <table class="alerts-table">
@@ -34,21 +23,34 @@
                             <th>Severity</th>
                         </tr>
                     </thead>
-                    <tbody id="alerts-tbody">
-                        </tbody>
+                    <tbody id="alerts-tbody"></tbody>
                 </table>
             </div>
         </div>
+
+        <div class="widget">
+            <h2>Threat Intelligence Lookup</h2>
+            <form id="lookup-form">
+                <input type="text" id="ip-input" placeholder="Enter IP Address for analysis..." required>
+                <button type="submit">Analyze</button>
+            </form>
+            <div id="lookup-results">Lookup results will appear here...</div>
+        </div>
+
         <div class="widget">
             <h2>Alerts by Type</h2>
             <canvas id="alertsChart"></canvas>
         </div>
+
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script>
         document.addEventListener('DOMContentLoaded', function() {
             const alertsTbody = document.getElementById('alerts-tbody');
+            const lookupForm = document.getElementById('lookup-form');
+            const ipInput = document.getElementById('ip-input');
+            const lookupResultsDiv = document.getElementById('lookup-results');
             let alertsChart;
 
             // Function to update the alerts table
@@ -56,11 +58,11 @@
                 fetch('/api/alerts')
                     .then(response => response.json())
                     .then(data => {
-                        alertsTbody.innerHTML = ''; // Clear existing table rows
+                        alertsTbody.innerHTML = '';
                         data.forEach(alert => {
                             const row = document.createElement('tr');
                             row.innerHTML = `
-                                <td>${alert.timestamp}</td>
+                                <td>${new Date(alert.timestamp).toLocaleString()}</td>
                                 <td>${alert.alert_type}</td>
                                 <td>${alert.description}</td>
                                 <td>${alert.source_ip || 'N/A'}</td>
@@ -78,34 +80,58 @@
                     .then(stats => {
                         const ctx = document.getElementById('alertsChart').getContext('2d');
                         if (alertsChart) {
-                            alertsChart.destroy(); // Destroy old chart before creating new one
+                            alertsChart.destroy();
                         }
                         alertsChart = new Chart(ctx, {
                             type: 'doughnut',
                             data: {
                                 labels: stats.labels,
                                 datasets: [{
-                                    label: 'Alerts Count',
                                     data: stats.data,
                                     backgroundColor: ['#ff5555', '#ffb86c', '#8be9fd', '#50fa7b', '#bd93f9'],
                                     borderColor: '#1e1e1e',
-                                    borderWidth: 3
+                                    borderWidth: 4
                                 }]
                             },
-                            options: {
-                                responsive: true,
-                                plugins: {
-                                    legend: {
-                                        position: 'top',
-                                        labels: { color: '#e0e0e0' }
-                                    }
-                                }
-                            }
+                            options: { responsive: true, plugins: { legend: { position: 'top', labels: { color: '#e0e0e0' } } } }
                         });
                     });
             }
 
-            // Initial load and set interval to refresh data every 5 seconds
+            // Function to handle IOC Lookup
+            lookupForm.addEventListener('submit', function(event) {
+                event.preventDefault();
+                const ip = ipInput.value.trim();
+                if (!ip) return;
+
+                lookupResultsDiv.textContent = 'Analyzing...';
+
+                fetch('/api/lookup', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ ip: ip })
+                })
+                .then(response => response.json())
+                .then(results => {
+                    let report = `Analysis for: ${ip}\n\n`;
+                    if (results.virustotal && !results.virustotal.error) {
+                        const vt = results.virustotal;
+                        report += `--- VirusTotal ---\n`;
+                        report += `Owner: ${vt.owner}\n`;
+                        report += `Country: ${vt.country}\n`;
+                        report += `Malicious: ${vt.malicious}\n`;
+                        report += `Suspicious: ${vt.suspicious}`;
+                    } else {
+                        report += `VirusTotal: ${results.virustotal.error}`;
+                    }
+                    lookupResultsDiv.textContent = report;
+                })
+                .catch(error => {
+                    lookupResultsDiv.textContent = `Error: ${error}`;
+                });
+            });
+
+            // Initial load and set intervals
             updateAlerts();
             updateChart();
             setInterval(updateAlerts, 5000);
