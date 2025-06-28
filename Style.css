@@ -1,0 +1,109 @@
+/* General Body and Theme */
+body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji";
+    background-color: #121212;
+    color: #e0e0e0;
+    margin: 0;
+    padding: 20px;
+}
+
+h1, h2 {
+    color: #76a9fa;
+    border-bottom: 1px solid #3a3a3a;
+    padding-bottom: 10px;
+    font-weight: 400;
+}
+
+/* Dashboard Layout */
+.dashboard-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(450px, 1fr));
+    gap: 20px;
+}
+
+.widget {
+    background-color: #1e1e1e;
+    padding: 20px;
+    border-radius: 8px;
+    border: 1px solid #3a3a3a;
+    box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+    display: flex;
+    flex-direction: column;
+}
+
+/* Alerts Table Widget */
+#alerts-table-container {
+    max-height: 600px;
+    overflow-y: auto;
+    flex-grow: 1; /* Make table container fill widget space */
+}
+
+.alerts-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.alerts-table th, .alerts-table td {
+    padding: 12px 15px;
+    text-align: left;
+    border-bottom: 1px solid #3a3a3a;
+    white-space: nowrap;
+}
+
+.alerts-table td:nth-child(3) { /* Description column */
+    white-space: normal;
+    word-break: break-all;
+}
+
+
+.alerts-table thead th {
+    background-color: #252525;
+    position: sticky;
+    top: 0;
+    font-size: 14px;
+}
+
+.severity-High { color: #ff5555; font-weight: bold; }
+.severity-Medium { color: #ffb86c; }
+.severity-Low { color: #8be9fd; }
+
+/* IOC Lookup Widget */
+#lookup-form {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 20px;
+}
+
+#lookup-form input[type="text"] {
+    flex-grow: 1;
+    padding: 10px;
+    border-radius: 5px;
+    border: 1px solid #555;
+    background-color: #333;
+    color: #e0e0e0;
+    font-size: 16px;
+}
+
+#lookup-form button {
+    padding: 10px 20px;
+    border: none;
+    border-radius: 5px;
+    background-color: #76a9fa;
+    color: #121212;
+    font-size: 16px;
+    cursor: pointer;
+    transition: background-color 0.3s;
+}
+
+#lookup-form button:hover {
+    background-color: #a1c9ff;
+}
+
+#lookup-results {
+    font-family: 'Courier New', Courier, monospace;
+    background-color: #252525;
+    padding: 15px;
+    border-radius: 5px;
+    white-space: pre-wrap;
+    min-height: 100px;
+}
